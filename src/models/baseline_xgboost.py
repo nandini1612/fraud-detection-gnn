@@ -1,30 +1,3 @@
-"""
-Baseline Model 2: XGBoost
-
-PURPOSE:
-- More powerful baseline than Logistic Regression
-- Can capture non-linear patterns and feature interactions
-- Still ignores graph structure (uses only node features)
-
-WHY XGBOOST?
-✅ State-of-the-art for tabular data
-✅ Handles non-linear relationships
-✅ Built-in feature importance
-✅ Robust to overfitting (regularization)
-✅ Industry standard (Kaggle winner, used at Uber/Airbnb)
-
-EXPECTED IMPROVEMENT OVER LOGISTIC REGRESSION:
-- Better at capturing complex patterns
-- Should improve F1 by 5-15%
-- But still won't use graph structure!
-
-INTERVIEW QUESTION: "When would you use XGBoost vs GNN?"
-ANSWER:
-- XGBoost: When graph structure doesn't matter (isolated fraud)
-- GNN: When relationships matter (fraud rings, money laundering chains)
-- Try both! Sometimes XGBoost + graph features beats pure GNN
-"""
-
 import torch
 import numpy as np
 from pathlib import Path
@@ -43,44 +16,12 @@ from src.utils.config import get_config
 
 
 class XGBoostBaseline:
-    """
-    XGBoost baseline for fraud detection
-
-    ADVANTAGES OVER LOGISTIC REGRESSION:
-    - Non-linear decision boundaries (trees!)
-    - Automatic feature interactions (no manual engineering)
-    - Built-in regularization (prevents overfitting)
-    - Handles missing values naturally
-
-    DISADVANTAGES:
-    - Still ignores graph structure
-    - Harder to interpret than logistic regression
-    - Slower to train (but still fast compared to GNNs)
-    """
-
     def __init__(self, config=None):
         self.config = config or get_config()
         self.model = None
         self.results = {}
 
     def train(self, data_path: Path = None):
-        """
-        Train XGBoost model
-
-        HYPERPARAMETERS EXPLAINED:
-        - max_depth=6: How deep trees can grow (prevents overfitting)
-        - learning_rate=0.1: Step size for gradient descent (smaller = more robust)
-        - n_estimators=200: Number of trees (more = better, but slower)
-        - subsample=0.8: Train each tree on 80% of data (prevents overfitting)
-        - colsample_bytree=0.8: Use 80% of features per tree (faster, more robust)
-        - scale_pos_weight: Handle class imbalance (fraud is minority)
-        - eval_metric='aucpr': Optimize for area under PR curve (better for imbalanced data)
-
-        WHY THESE VALUES?
-        - Typical defaults for fraud detection
-        - Balanced between performance and training time
-        - Can be tuned later with hyperparameter search
-        """
         print("=" * 80)
         print("TRAINING XGBOOST BASELINE")
         print("=" * 80)
@@ -351,17 +292,6 @@ class XGBoostBaseline:
 
 
 def main():
-    """
-    Run XGBoost baseline
-
-    USAGE:
-    python -m src.models.baseline_xgboost
-
-    EXPECTED OUTPUT:
-    - Should beat Logistic Regression by 5-15% F1
-    - But still won't use graph structure!
-    - Shows what's achievable with better tabular model
-    """
     config = get_config()
     baseline = XGBoostBaseline(config)
 
@@ -374,67 +304,17 @@ def main():
     print("\n" + "=" * 80)
     print("COMPARISON: LOGISTIC REGRESSION vs XGBOOST")
     print("=" * 80)
-    print("\n💡 Key Takeaways:")
+    print("\nKey Takeaways:")
     print("   • XGBoost usually improves F1 by 5-15% over Logistic Regression")
     print("   • Both models ignore graph structure (only use node features)")
     print(
         "   • If XGBoost doesn't improve much, features might not be very informative"
     )
     print("   • Next: Try GNN to leverage graph structure!")
-    print("\n✅ Baseline complete!")
-    print("💡 Next: Train simple GCN to see benefit of graph structure")
+    print("\n Baseline complete!")
+    print(" Next: Train simple GCN to see benefit of graph structure")
     print("   Command: python -m src.models.baseline_gcn")
 
 
 if __name__ == "__main__":
     main()
-
-
-# ============================================================================
-# INTERVIEW QUESTIONS TO PREPARE
-# ============================================================================
-
-"""
-Q1: Why does XGBoost usually beat Logistic Regression?
-A:
-   - Non-linear decision boundaries (trees vs linear)
-   - Automatic feature interactions (no manual engineering)
-   - Better handles complex patterns
-   - More expressive model class
-
-Q2: When would Logistic Regression be better than XGBoost?
-A:
-   - Need interpretability (linear weights easier to explain)
-   - Very small dataset (XGBoost might overfit)
-   - Real-time inference (LR is faster)
-   - Linearly separable data (no need for complexity)
-
-Q3: What if XGBoost doesn't improve over Logistic Regression?
-A:
-   - Features might already be linear
-   - Or features aren't very informative
-   - Or class imbalance is too severe
-   - Try: Better features, graph structure (GNN), more data
-
-Q4: How do you tune XGBoost hyperparameters?
-A:
-   - Grid search (exhaustive but slow)
-   - Random search (faster, often good enough)
-   - Bayesian optimization (smart, efficient)
-   - Cross-validation for each setting
-   - Monitor train vs val to avoid overfitting
-
-Q5: Can you combine XGBoost with graph structure?
-A:
-   - Yes! Extract graph features (degree, clustering, PageRank)
-   - Add as additional features to XGBoost
-   - Or: Use GNN embeddings as features for XGBoost
-   - Sometimes beats pure GNN (best of both worlds)
-
-Q6: Why use aucpr instead of accuracy?
-A:
-   - Fraud is ~10% of data (imbalanced)
-   - Accuracy misleading (90% accuracy by predicting "all legitimate")
-   - AUCPR focuses on precision-recall tradeoff
-   - Better for imbalanced classification
-"""
