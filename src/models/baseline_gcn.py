@@ -1,44 +1,3 @@
-"""
-Baseline Model 3: Simple GCN (Graph Convolutional Network)
-
-PURPOSE:
-- FINALLY use the graph structure!
-- Show that relationships matter for fraud detection
-- Baseline for more advanced GNN models (GraphSAGE)
-
-WHY GCN?
-✅ Simple and interpretable GNN architecture
-✅ Aggregates information from neighbors
-✅ Can detect fraud rings and money laundering chains
-✅ Should beat both Logistic Regression and XGBoost
-
-HOW GCN WORKS:
-1. Start with node features (transaction details)
-2. Aggregate neighbor features (connected transactions)
-3. Update node representation with neighbor info
-4. Repeat for multiple layers (spread information further)
-
-MATHEMATICAL FORMULA:
-H^(l+1) = σ(D^(-1/2) A D^(-1/2) H^(l) W^(l))
-
-WHERE:
-- H^(l) = node features at layer l
-- A = adjacency matrix (who's connected to whom)
-- D = degree matrix (how many connections)
-- W^(l) = learnable weights
-- σ = activation function (ReLU)
-
-INTUITION:
-"Update my representation by averaging my neighbors' features"
-
-EXPECTED RESULTS:
-- Test F1: 0.15-0.30 (better than baselines!)
-- Should catch more fraud by detecting patterns like:
-  * "This transaction connects to known fraudsters"
-  * "This forms a suspicious ring of transactions"
-  * "Money flows through this in an unusual pattern"
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -61,43 +20,7 @@ from src.utils.config import get_config
 
 
 class GCN(nn.Module):
-    """
-    Simple 2-layer Graph Convolutional Network
-
-    ARCHITECTURE:
-    Input (182 features)
-      → GCN Layer 1 (182 → 64, with ReLU + Dropout)
-      → GCN Layer 2 (64 → 2 classes)
-      → Softmax
-
-    WHY 2 LAYERS?
-    - Layer 1: Aggregates 1-hop neighbors (direct connections)
-    - Layer 2: Aggregates 2-hop neighbors (friends of friends)
-    - More layers = see further, but risk over-smoothing
-
-    WHY DROPOUT?
-    - Randomly drops 50% of features during training
-    - Prevents overfitting (forces model to be robust)
-    - Standard regularization technique
-
-    INTERVIEW QUESTION: "Why not use more layers?"
-    ANSWER:
-    - Over-smoothing: All nodes become too similar
-    - Vanishing gradients: Hard to train deep GNNs
-    - 2-3 layers usually optimal for most graphs
-    - GraphSAGE addresses this with sampling!
-    """
-
     def __init__(self, num_features, hidden_dim=64, num_classes=2, dropout=0.5):
-        """
-        Initialize GCN
-
-        Args:
-            num_features: Number of input features (182)
-            hidden_dim: Hidden layer size (64)
-            num_classes: Number of output classes (2: fraud/legitimate)
-            dropout: Dropout probability (0.5 = drop 50%)
-        """
         super(GCN, self).__init__()
 
         # Layer 1: Input → Hidden
@@ -109,22 +32,6 @@ class GCN(nn.Module):
         self.dropout = dropout
 
     def forward(self, x, edge_index):
-        """
-        Forward pass through the network
-
-        Args:
-            x: Node features [num_nodes, num_features]
-            edge_index: Edge connectivity [2, num_edges]
-
-        Returns:
-            log_probs: Log probabilities for each class [num_nodes, num_classes]
-
-        FLOW:
-        1. First GCN layer + ReLU activation
-        2. Dropout (regularization)
-        3. Second GCN layer
-        4. Log softmax (for classification)
-        """
         # Layer 1
         x = self.conv1(x, edge_index)
         x = F.relu(x)
@@ -138,16 +45,6 @@ class GCN(nn.Module):
 
 
 class GCNBaseline:
-    """
-    Training and evaluation wrapper for GCN
-
-    HANDLES:
-    - Model training with early stopping
-    - Class imbalance (weighted loss)
-    - Evaluation metrics
-    - Visualization
-    """
-
     def __init__(self, config=None):
         self.config = config or get_config()
         self.model = None
@@ -155,25 +52,6 @@ class GCNBaseline:
         self.results = {}
 
     def train(self, data_path: Path = None, epochs=200, lr=0.01, patience=20):
-        """
-        Train GCN model
-
-        TRAINING STRATEGY:
-        - Weighted loss (handle class imbalance)
-        - Early stopping (prevent overfitting)
-        - Adam optimizer (adaptive learning rate)
-
-        Args:
-            data_path: Path to processed graph
-            epochs: Maximum training epochs (200)
-            lr: Learning rate (0.01)
-            patience: Early stopping patience (20 epochs)
-
-        EARLY STOPPING:
-        - Monitor validation F1 score
-        - If no improvement for 20 epochs, stop
-        - Prevents overfitting and saves time
-        """
         print("=" * 80)
         print("TRAINING GCN BASELINE")
         print("=" * 80)
@@ -469,17 +347,6 @@ class GCNBaseline:
 
 
 def main():
-    """
-    Run GCN baseline
-
-    USAGE:
-    python -m src.models.baseline_gcn
-
-    EXPECTED OUTPUT:
-    - Should beat Logistic Regression and XGBoost!
-    - Test F1: 0.15-0.30 (improvement from using graph)
-    - Shows that relationships matter for fraud detection
-    """
     config = get_config()
     baseline = GCNBaseline(config)
 
@@ -495,11 +362,11 @@ def main():
     print(f"   • GCN:                {results['test']['f1']:.3f}")
 
     if results["test"]["f1"] > 0.15:
-        print("\n✅ GCN beats baselines! Graph structure helps!")
+        print("\nGCN beats baselines! Graph structure helps!")
     else:
-        print("\n⚠️  GCN didn't improve much. Graph might not be very informative.")
+        print("\nGCN didn't improve much. Graph might not be very informative.")
 
-    print("\n💡 Next: Train GraphSAGE for better performance")
+    print("\nNext: Train GraphSAGE for better performance")
     print("   Command: python -m src.models.train_graphsage")
 
 
