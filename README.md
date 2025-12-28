@@ -184,4 +184,67 @@ Left: Training loss (or F1) over epochs.
 Right: Validation loss (or F1) over epochs.
 
 Key Insight: Training performance improves steadily, but validation performance stagnates or decreases, indicating overfitting. This comparison confirms that even well-optimized GNNs fail to generalize on evolving data, emphasizing the importance of temporal evaluation.
+---
 
+## Limitations
+
+- Only static GNN architectures were evaluated; temporal or dynamic GNNs were not explored
+- Label noise and partially labeled data may affect absolute metrics
+- Findings are based on a single blockchain dataset and may not fully generalize
+- No online or continual learning methods were implemented
+
+These constraints are intentional and align with the project’s diagnostic focus.
+
+---
+
+## Practical Implications
+
+The findings suggest that effective fraud detection systems should prioritize **adaptation over architecture**. Based on this study, recommended deployment strategies include:
+
+- Weekly (or more frequent) retraining on recent data
+- Continuous drift monitoring as a first-class system component
+- Simple, interpretable baselines as performance anchors
+- Ensemble approaches where low-variance models dominate the weighting
+
+This project reinforced that **production ML is about continuous learning, not static model selection**.
+
+---
+
+## Tech Stack
+
+- Python  
+- PyTorch & PyTorch Geometric  
+- scikit-learn  
+- XGBoost  
+- NumPy  
+- pandas  
+- matplotlib  
+
+*(Models are described in the Methods section; this list reflects implementation tools.)*
+
+---
+
+## Key Takeaways
+
+- Evaluation design matters more than model choice
+- Temporal concept drift is the defining challenge in fraud detection
+- Complex models can overfit faster under non-stationarity
+- Real-world systems must emphasize retraining, monitoring, and robustness
+---
+
+## Future Work
+
+- Temporal and dynamic graph neural networks
+- Online and continual learning strategies
+- Explicit drift detection and alerting mechanisms
+- Adaptive retraining schedules based on performance decay
+---
+## Contact
+For questions, collaboration, or research discussion:
+- **Name:** Nandini Saxena  
+- **Email:** nandinisaxenawork@gmail.com  
+- **GitHub:** https://github.com/nandini1612  
+- **LinkedIn:** https://www.linkedin.com/in/nandini-saxena1111/
+
+Interested in research and applied Data Science and ML work involving robustness,
+distribution shift, and graph-based learning.
