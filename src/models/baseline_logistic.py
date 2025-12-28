@@ -1,29 +1,3 @@
-"""
-Baseline Model 1: Logistic Regression
-
-PURPOSE:
-- Establish performance baseline using ONLY node features (no graph structure)
-- Shows what's achievable with traditional ML
-- Provides comparison point for GNN models
-
-WHY LOGISTIC REGRESSION?
-✅ Simple, interpretable, fast
-✅ Works well with high-dimensional sparse data
-✅ Industry standard for fraud detection
-✅ If GNN doesn't beat this significantly, graph structure isn't helping!
-
-WHAT WE'RE TESTING:
-"Can we detect fraud using transaction features alone, WITHOUT graph?"
-
-EXPECTED RESULTS:
-- Precision: 60-75% (many false positives in fraud detection)
-- Recall: 40-60% (hard to catch all fraud)
-- F1-Score: 50-65%
-- AUC-ROC: 75-85%
-
-If GNN doesn't beat this by 5-10%, graph structure isn't worth the complexity!
-"""
-
 import torch
 import numpy as np
 from pathlib import Path
@@ -43,44 +17,12 @@ from src.utils.config import get_config
 
 
 class LogisticRegressionBaseline:
-    """
-    Logistic Regression baseline for fraud detection
-
-    TREATS THE PROBLEM AS:
-    - Binary classification (fraud vs legitimate)
-    - Uses only node features (ignores graph structure)
-    - Standard tabular ML approach
-
-    INTERVIEW QUESTION: "Why not just use Logistic Regression in production?"
-    ANSWER:
-    - LR ignores graph structure (fraud rings, money laundering chains)
-    - Can't capture relational patterns (connected fraudsters)
-    - Works well for isolated fraud, fails for organized crime
-    - But: Fast, interpretable, good baseline!
-    """
-
     def __init__(self, config=None):
         self.config = config or get_config()
         self.model = None
         self.results = {}
 
     def train(self, data_path: Path = None):
-        """
-        Train logistic regression model
-
-        STEPS:
-        1. Load graph data
-        2. Extract features and labels for train set
-        3. Handle class imbalance (class_weight='balanced')
-        4. Train model
-        5. Evaluate on val and test sets
-
-        CLASS IMBALANCE HANDLING:
-        - Fraud is ~10% of data (90% legitimate)
-        - Without weighting, model predicts "all legitimate" (90% accuracy!)
-        - class_weight='balanced' gives fraud examples 9x weight
-        - Forces model to pay attention to minority class
-        """
         print("=" * 80)
         print("TRAINING LOGISTIC REGRESSION BASELINE")
         print("=" * 80)
@@ -93,7 +35,7 @@ class LogisticRegressionBaseline:
         data = torch.load(data_path)
 
         print(
-            f"   ✓ Loaded: {data.num_nodes:,} nodes, {data.num_node_features} features"
+            f" Loaded: {data.num_nodes:,} nodes, {data.num_node_features} features"
         )
 
         # Extract numpy arrays
@@ -151,31 +93,6 @@ class LogisticRegressionBaseline:
         return self.results
 
     def _evaluate(self, X, y, split_name):
-        """
-        Evaluate model on a dataset split
-
-        METRICS WE CARE ABOUT:
-        1. Precision: Of predicted fraud, how many are actually fraud?
-           - High precision = few false alarms
-           - Critical for user experience (false alarms annoy customers)
-
-        2. Recall: Of actual fraud, how many did we catch?
-           - High recall = catch most fraud
-           - Critical for business (missed fraud costs money)
-
-        3. F1-Score: Harmonic mean of precision and recall
-           - Single number to compare models
-           - Good for imbalanced datasets
-
-        4. AUC-ROC: Area under ROC curve
-           - Measures discrimination ability
-           - Threshold-independent (robust metric)
-
-        WHY NOT ACCURACY?
-        - With 90% legitimate, predicting "all legitimate" = 90% accuracy!
-        - Accuracy is misleading for imbalanced data
-        - We care about finding fraud, not overall correctness
-        """
         y_pred = self.model.predict(X)
         y_proba = self.model.predict_proba(X)[:, 1]  # Probability of fraud
 
@@ -202,7 +119,6 @@ class LogisticRegressionBaseline:
         return results
 
     def _print_summary(self):
-        """Print results summary"""
         print("\n" + "=" * 80)
         print("RESULTS SUMMARY")
         print("=" * 80)
@@ -228,19 +144,6 @@ class LogisticRegressionBaseline:
         print("\n" + "=" * 80)
 
     def _plot_results(self, X_test, y_test):
-        """
-        Create visualizations
-
-        PLOTS:
-        1. Confusion Matrix (heatmap)
-        2. ROC Curve (TPR vs FPR)
-        3. Precision-Recall Curve (precision vs recall)
-
-        WHY THESE PLOTS?
-        - Confusion matrix: Shows error types (false positives vs false negatives)
-        - ROC curve: Shows tradeoff between sensitivity and specificity
-        - PR curve: Better for imbalanced data than ROC
-        """
         results = self.results["test"]
 
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
@@ -305,20 +208,6 @@ class LogisticRegressionBaseline:
         plt.show()
 
     def get_feature_importance(self, top_k=20):
-        """
-        Get most important features
-
-        HOW IT WORKS:
-        - Logistic regression coefficients show feature importance
-        - Positive coef → increases fraud probability
-        - Negative coef → decreases fraud probability
-        - Magnitude shows strength of effect
-
-        BUSINESS VALUE:
-        - Understand what makes transactions suspicious
-        - Explain model decisions to compliance team
-        - Feature engineering insights
-        """
         if self.model is None:
             raise ValueError("Model not trained yet!")
 
@@ -339,18 +228,6 @@ class LogisticRegressionBaseline:
 
 
 def main():
-    """
-    Run baseline logistic regression
-
-    USAGE:
-    python -m src.models.baseline_logistic
-
-    EXPECTED OUTPUT:
-    - Train/Val/Test metrics
-    - Confusion matrices
-    - Plots (ROC, PR curves)
-    - Feature importance
-    """
     config = get_config()
     baseline = LogisticRegressionBaseline(config)
 
@@ -360,61 +237,10 @@ def main():
     # Show feature importance
     baseline.get_feature_importance(top_k=20)
 
-    print("\n✅ Baseline complete!")
-    print("💡 Next: Run XGBoost baseline for comparison")
-    print("   Command: python -m src.models.baseline_xgboost")
+    print("\nBaseline complete!")
+    print("Next: Run XGBoost baseline for comparison")
+    print("  Command: python -m src.models.baseline_xgboost")
 
 
 if __name__ == "__main__":
     main()
-
-
-# ============================================================================
-# INTERVIEW QUESTIONS TO PREPARE
-# ============================================================================
-
-"""
-Q1: Why is logistic regression a good baseline?
-A:
-   - Fast to train (seconds vs hours for GNN)
-   - Interpretable (can explain predictions)
-   - Works well with high-dimensional data
-   - Industry standard (proven in production)
-   - If GNN doesn't beat it, graph structure isn't helping!
-
-Q2: How do you handle class imbalance?
-A:
-   - class_weight='balanced' (weight fraud examples more)
-   - Oversample minority class (SMOTE)
-   - Undersample majority class
-   - Focal loss (focus on hard examples)
-   - Threshold tuning (optimize for business metric)
-
-Q3: What if logistic regression performs well (>85% F1)?
-A:
-   - Graph structure might not be important for this problem
-   - Features alone capture fraud patterns
-   - GNN adds complexity without benefit
-   - Decision: Use simpler model in production
-   
-Q4: What if logistic regression performs poorly (<50% F1)?
-A:
-   - Need more powerful model (XGBoost, GNN)
-   - Graph structure might help
-   - Or: Need better features
-   - Or: More labeled data
-
-Q5: How do you explain predictions to compliance team?
-A:
-   - Show top feature coefficients
-   - SHAP values (more sophisticated)
-   - Example: "Flagged because: high transaction amount + unusual time"
-   - GNNs harder to explain (tradeoff: accuracy vs interpretability)
-
-Q6: What threshold should you use in production?
-A:
-   - Depends on business cost of false positives vs false negatives
-   - Example: Missing fraud = -$1000, False alarm = -$10
-   - Optimize threshold for expected cost
-   - Often use lower threshold (catch more fraud, accept more false alarms)
-"""
