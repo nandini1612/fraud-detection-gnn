@@ -3,14 +3,13 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env
 .venv/
 venv/
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Data (IMPORTANT – datasets are usually not pushed)
+# Data
 data/raw/
 data/processed/
 
