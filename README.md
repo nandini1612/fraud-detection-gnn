@@ -118,7 +118,7 @@ Graph learning is most effective when relationships are stable—an assumption v
 
 ## Figures and Visualisations
 1. Data Distribution
-(images/class_distribution.png)
+!(images/class_distribution.png)
 Left: Labeled data distribution (excluding unknown class), showing the imbalance between licit and illicit transactions.
 
 Right: Full dataset class distribution, highlighting a significant proportion of unknown data.
@@ -126,7 +126,7 @@ Right: Full dataset class distribution, highlighting a significant proportion of
 Key Insight: The dataset is highly imbalanced, which directly affects model evaluation and emphasizes the need for careful metric selection (F1-score over accuracy).
 
 2. Graph Structure Analysis
-(images/degree_distribution.png)
+!(images/degree_distribution.png)
 Left: In-degree distribution (log-log scale).
 
 Right: Out-degree distribution (log-log scale).
@@ -134,36 +134,36 @@ Right: Out-degree distribution (log-log scale).
 Key Insight: Both distributions exhibit heavy-tailed behavior, indicating a few nodes have very high connectivity while most nodes have low connectivity—common in real-world transactional graphs.
 
 3. Feature Distributions
-(images/feature_distributions.png)
+!(images/feature_distributions.png)
 Shows selected feature distributions (feature_1, feature_2, feature_10, feature_50) for licit vs. fraudulent transactions.
 
 Key Insight: Certain features demonstrate strong separation between licit and fraudulent classes, which can be exploited by simpler models (e.g., logistic regression).
 
 4. Temporal Fraud Analysis
-(images/temporal_fraud_ratio.png)
+!(images/temporal_fraud_ratio.png)
 Plot of fraud ratio over time steps.
 
 Key Insight: The fraud ratio changes drastically over time, confirming temporal concept drift, which explains why models trained on historical data fail to generalize.
 
 5. Baseline GNN Model Performance
-(images/baseline_logreg.png)
+!(images/baseline_logreg.png)
 
-(images/baseline_xgboost.png)
+!(images/baseline_xgboost.png)
 
-(images/baseline_gcn.png)
+!(images/baseline_gcn.png)
 
 Confusion matrices, ROC curves, and precision-recall curves for baseline GCN and GraphSAGE models.
 
 Key Insight: All GNNs train perfectly on historical data (90%+ F1), but test performance drops drastically (2–10% F1), confirming that temporal concept drift dominates performance over model complexity.
 
 6. Feature Importance
-(images/xgboost_imp_features.png)
+!(images/xgboost_imp_features.png)
 Bar chart of feature importance from XGBoost.
 
 Key Insight: Certain features dominate the prediction signal, reinforcing that simpler models leveraging key features can outperform complex GNNs on evolving fraud patterns.
 
 7. Training and Validation Curves
-(images/training_validation_baseline_gcn.png)
+!(images/training_validation_baseline_gcn.png)
 Left: Training loss curve.
 
 Right: Validation F1 curve over epochs for baseline GCN.
@@ -171,7 +171,7 @@ Right: Validation F1 curve over epochs for baseline GCN.
 Key Insight: Training converges smoothly, but validation performance remains low, highlighting that model overfitting to historical data occurs due to concept drift rather than inadequate training.
 
 8. GraphSAGE Test Performance
-(images/graphsage.png)
+!(images/graphsage.png)
 left: GraphSAGE confusion matrix on the test set.
 Middle: ROC curve showing model’s discriminative ability.
 Right: Precision-recall curve highlighting performance on the positive (fraudulent) class.
@@ -179,7 +179,7 @@ Right: Precision-recall curve highlighting performance on the positive (fraudule
 Key Insight: Despite GraphSAGE capturing graph structures, test performance is still very low due to severe temporal concept drift. Precision-recall curve shows that the model struggles to detect fraudulent transactions, reinforcing that historical graph patterns do not generalize well.
 
 9. Training vs. Validation Performance Comparison
-[train_val_graphsage.png]
+!(images/train_val_graphsage.png)
 Left: Training loss (or F1) over epochs.
 Right: Validation loss (or F1) over epochs.
 
