@@ -1,26 +1,3 @@
-"""
-GraphSAGE: Graph Sample and Aggregate
-
-PURPOSE:
-- Our main model! Advanced GNN for fraud detection
-- Uses SAGEConv layers (better than GCN)
-- Full-batch training (simplified for this project)
-
-NOTE: This version uses full-batch training instead of neighbor sampling
-because pyg-lib/torch-sparse have Windows compatibility issues.
-For production at scale, use Linux with proper sampling libraries.
-
-WHY GRAPHSAGE ARCHITECTURE?
-✅ Better aggregation than GCN (mean aggregation)
-✅ Deeper network (128 → 64 vs 64 for GCN)
-✅ More parameters (better capacity)
-✅ SAGEConv designed for sampling (even if we can't use it here)
-
-EXPECTED RESULTS:
-- Test F1: 0.15-0.30 (hopefully better than baselines!)
-- Should show if graph structure + better architecture helps
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -45,22 +22,6 @@ from src.utils.config import get_config
 
 
 class GraphSAGE(nn.Module):
-    """
-    GraphSAGE Model
-
-    ARCHITECTURE:
-    Input (182 features)
-      → SAGE Layer 1 (182 → 128) + ReLU + Dropout
-      → SAGE Layer 2 (128 → 64) + ReLU + Dropout
-      → Linear (64 → 2 classes)
-      → Log Softmax
-
-    IMPROVEMENTS OVER SIMPLE GCN:
-    1. Larger hidden dimensions (128, 64 vs 64)
-    2. SAGEConv aggregation (better than GCNConv)
-    3. More capacity to learn complex patterns
-    """
-
     def __init__(
         self,
         num_features,
@@ -70,17 +31,7 @@ class GraphSAGE(nn.Module):
         dropout=0.5,
         aggr="mean",
     ):
-        """
-        Initialize GraphSAGE
 
-        Args:
-            num_features: Input feature dimension (182)
-            hidden_dim1: First hidden layer (128)
-            hidden_dim2: Second hidden layer (64)
-            num_classes: Output classes (2)
-            dropout: Dropout probability (0.5)
-            aggr: Aggregation method ('mean')
-        """
         super(GraphSAGE, self).__init__()
 
         # Layer 1: Input → Hidden1 (with mean aggregation)
@@ -113,12 +64,6 @@ class GraphSAGE(nn.Module):
 
 
 class GraphSAGETrainer:
-    """
-    Training and evaluation wrapper for GraphSAGE
-
-    Uses full-batch training (processes entire graph at once)
-    """
-
     def __init__(self, config=None):
         self.config = config or get_config()
         self.model = None
@@ -126,15 +71,6 @@ class GraphSAGETrainer:
         self.results = {}
 
     def train(self, data_path: Path = None, epochs=200, lr=0.01, patience=20):
-        """
-        Train GraphSAGE model
-
-        Args:
-            data_path: Path to processed graph
-            epochs: Maximum training epochs (200)
-            lr: Learning rate (0.01)
-            patience: Early stopping patience (20 epochs)
-        """
         print("=" * 80)
         print("TRAINING GRAPHSAGE")
         print("=" * 80)
@@ -372,9 +308,9 @@ class GraphSAGETrainer:
         improvement = (self.results["test"]["f1"] - best_baseline) / best_baseline * 100
 
         if self.results["test"]["f1"] > best_baseline:
-            print(f"\n✅ GraphSAGE beats best baseline by {improvement:.1f}%!")
+            print(f"\nGraphSAGE beats best baseline by {improvement:.1f}%!")
         else:
-            print(f"\n⚠️  GraphSAGE didn't beat best baseline ({improvement:.1f}%)")
+            print(f"\nGraphSAGE didn't beat best baseline ({improvement:.1f}%)")
 
         print("=" * 80)
 
@@ -498,8 +434,8 @@ def main():
     # Train
     results = trainer.train(epochs=200, lr=0.01, patience=20)
 
-    print("\n✅ GraphSAGE training complete!")
-    print("\n💡 Next steps:")
+    print("\nGraphSAGE training complete!")
+    print("\nNext steps:")
     print("   • Analyze results vs baselines")
     print("   • Create final comparison table")
     print("   • Prepare interview talking points")
@@ -507,58 +443,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# ============================================================================
-# INTERVIEW QUESTIONS TO PREPARE
-# ============================================================================
-
-"""
-Q1: Why GraphSAGE instead of GCN?
-A:
-   - Scalability: Samples neighbors (O(K) vs O(N))
-   - No over-smoothing: Fixed K neighbors per layer
-   - Inductive: Works on new nodes without retraining
-   - Mini-batch training: Faster, more stable
-   - Industry proven: Used in production at scale
-
-Q2: How does neighbor sampling work?
-A:
-   - Layer 1: Sample 10 random neighbors (1-hop)
-   - Layer 2: Sample 5 neighbors of those 10 (2-hop)
-   - Total: 1 + 10 + 50 = 61 nodes per target node
-   - Much smaller than full graph (200K nodes!)
-   - Balances information gain vs computation
-
-Q3: What if GraphSAGE also fails on test set?
-A:
-   - Confirms temporal drift is the core problem
-   - No architecture solves distribution shift
-   - Production solution: Continuous retraining
-   - Or: Add temporal features (time embeddings)
-   - Or: Ensemble with LogReg (best baseline)
-
-Q4: How would you deploy GraphSAGE in production?
-A:
-   - Pre-compute embeddings offline (batch job)
-   - Store in vector DB (Pinecone, Milvus)
-   - Real-time: Lookup embedding + simple classifier
-   - Retrain weekly on recent data
-   - Monitor for performance degradation
-   - Human-in-loop for high-risk decisions
-
-Q5: Can you combine GraphSAGE with XGBoost?
-A:
-   - Yes! Use GraphSAGE to generate node embeddings
-   - Feed embeddings + original features to XGBoost
-   - Best of both: Graph structure + tree ensembles
-   - Often beats pure GNN in practice
-   - More interpretable than pure GNN
-
-Q6: What are GraphSAGE's limitations?
-A:
-   - Still needs retraining for new graph structure
-   - Sampling introduces variance (different runs differ)
-   - Harder to debug than simple models
-   - Requires GPU for reasonable speed
-   - Over-parameterized for small graphs
-"""
