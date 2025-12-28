@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (IMPORTANT – datasets are usually not pushed)
+data/raw/
+data/processed/
+
+# Outputs
+outputs/
+
+# OS
+.DS_Store
+Thumbs.db
