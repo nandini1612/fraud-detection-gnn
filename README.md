@@ -39,12 +39,21 @@ bitcoin-fraud-detection/
 │   └── processed/                  # Generated during preprocessing
 │
 ├── images/                         # Visualization outputs
+│   ├── class_distribution.png
+│   ├── degree_distribution.png
+│   ├── feature_distributions.png
 │   ├── temp1.png                   # Temporal fraud ratio analysis
 │   ├── temp2.png                   # Transaction volume over time
+│   ├── baseline_logreg.png
+│   ├── baseline_xgboost.png
+│   ├── baseline_gcn.png
 │   ├── fig1.png                    # Model performance dashboard
 │   ├── fig2.png                    # Confusion matrix analysis
 │   ├── fig3.png                    # Detailed performance metrics
-│   └── [additional plots]
+│   ├── xgboost_imp_features.png
+│   ├── training_validation_baseline_gcn.png
+│   ├── graphsage.png
+│   └── train_val_graphsage.png
 │
 ├── notebooks/                      # Jupyter notebooks
 │   └── [analysis notebooks]
@@ -109,29 +118,6 @@ The dataset's explicit temporal structure makes it well-suited for studying **di
 
 ---
 
-## Temporal Analysis
-
-### Fraud Ratio Evolution
-
-![Temporal Fraud Analysis](images/temp1.png)
-
-The temporal analysis reveals severe concept drift across the dataset's 49 timesteps. The fraud ratio fluctuates dramatically, demonstrating that fraud patterns are non-stationary. This instability is the primary cause of model failure when evaluated on future data.
-
-Key observations:
-- Training period (timesteps 1-35) shows fraud ratios ranging from 12% to 71%
-- Validation period (timesteps 36-42) exhibits different distributional characteristics
-- Test period (timesteps 43-49) has a fraud ratio of approximately 2.59%
-
-This 5-28× reduction in fraud prevalence between training and test periods explains why models trained to recognize historical fraud signatures fail to generalize.
-
-### Transaction Volume Shifts
-
-![Transaction Volume Analysis](images/temp2.png)
-
-Transaction volume varies significantly across time periods, with notable peaks and valleys that correspond to changes in network activity and fraud behavior. The combination of shifting fraud ratios and transaction volumes creates a challenging non-stationary environment where static models quickly become obsolete.
-
----
-
 ## Experimental Design
 
 ### Temporal Data Splits
@@ -171,67 +157,14 @@ Random splits were intentionally avoided, as they obscure temporal failure modes
 
 ## Results
 
-![Model Performance Dashboard](images/fig1.png)
-
-### Performance Summary
-
-| Model | Train F1 | Test F1 | Test Recall | Performance Drop |
-|------|----------|---------|-------------|------------------|
-| Logistic Regression | 0.73 | **0.099** | **46.7%** | -87% |
-| XGBoost | 0.98 | 0.030 | 1.8% | -97% |
-| GCN | 0.63 | 0.034 | 4.7% | -95% |
-| GraphSAGE | 0.96 | 0.008 | 0.6% | -99% |
+| Model | Train F1 | Test F1 | Test Recall |
+|------|----------|---------|-------------|
+| Logistic Regression | 0.73 | **0.098** | **46.7%** |
+| XGBoost | 0.98 | 0.035 | 1.8% |
+| GCN | 0.63 | 0.045 | 5.3% |
+| GraphSAGE | 0.96 | 0.021 | 1.8% |
 
 Despite lower training performance, **Logistic Regression outperformed complex GNNs by ~4× on test F1**, demonstrating substantially better temporal generalization.
-
-### Confusion Matrix Analysis
-
-![Confusion Matrices](images/fig2.png)
-
-The confusion matrices reveal distinct failure patterns across model architectures:
-
-**Logistic Regression**
-- Maintains balanced error distribution
-- Test confusion matrix shows 90 true frauds detected out of 169 total
-- 1,355 false positives, but critically preserves recall capability
-
-**XGBoost**
-- Nearly perfect training performance (6,491 TN, 3 TP)
-- Complete generalization failure on test set
-- Becomes extremely conservative, predicting almost all transactions as legitimate
-
-**Graph Neural Networks (GCN, GraphSAGE)**
-- Strong pattern recognition during training
-- Catastrophic collapse on test data
-- GraphSAGE achieves only 1 true positive out of 169 fraudulent transactions
-
-This analysis demonstrates that high-capacity models memorize training-specific patterns rather than learning generalizable fraud signatures.
-
-### Detailed Performance Metrics
-
-![Performance Metrics Breakdown](images/fig3.png)
-
-**Precision Analysis**:
-- All models achieve low precision on test data (0.012-0.100)
-- Logistic Regression maintains the highest precision at 0.055
-- Complex models show precision collapse despite near-perfect training metrics
-
-**Recall Analysis**:
-- Logistic Regression: 46.7% (only model maintaining meaningful recall)
-- XGBoost: 1.8%
-- GCN: 4.7%
-- GraphSAGE: 0.6%
-
-**AUC Comparison**:
-- Training AUC values range from 0.678 to 0.803
-- Test discrimination ability remains relatively preserved
-- However, decision boundaries learned during training fail to capture future fraud patterns
-
-**Error Rate Analysis**:
-The false positive vs false negative trade-offs reveal fundamental differences in model behavior:
-- Logistic Regression: Balanced error profile (20.8% FPR, 53.3% FNR)
-- XGBoost: Ultra-conservative (4.4% FPR, 98.2% FNR)
-- Graph models: Near-complete failure to detect fraud (>94% FNR)
 
 ---
 
@@ -243,7 +176,9 @@ All evaluated models trained successfully, achieving **90%+ F1** on historical d
 
 This is not a bug or implementation issue—it is **temporal concept drift**.
 
-Fraud tactics changed within weeks, rendering learned patterns obsolete. The resulting **86-99% performance drop from train to test** provides strong evidence that the core challenge is **data distribution shift**, not insufficient model expressiveness.
+Fraud tactics changed within weeks, rendering learned patterns obsolete. The resulting **~86% performance drop from train to test** provides strong evidence that the core challenge is **data distribution shift**, not insufficient model expressiveness.
+
+---
 
 ### Why Simpler Models Won
 
@@ -253,39 +188,187 @@ In effect, the simplest model generalized better because it was *less capable of
 
 This counterintuitive outcome underscores an important production lesson: **more powerful models can fail faster under non-stationarity**.
 
+---
+
 ### Limits of Graph Structure Under Drift
 
 While transaction graphs encode rich relational information, the topology itself evolved over time. Static graph assumptions limited the effectiveness of GNNs, as neighborhood structure and interaction patterns shifted alongside fraud strategies.
 
 Graph learning is most effective when relationships are stable—an assumption violated in adversarial, fast-moving domains.
 
-### The Recall Preservation Phenomenon
-
-The most operationally significant finding is that Logistic Regression maintains 46.7% recall while other models drop below 5%. In fraud detection systems, failing to catch fraud is often more costly than false alarms. A model that misses 98-99% of fraudulent transactions (as XGBoost and GraphSAGE do on test data) provides no practical value, regardless of training performance.
-
-This recall preservation suggests that linear models learn more robust, generalizable patterns rather than memorizing spurious correlations present in training data.
-
 ---
 
 ## Figures and Visualizations
 
-The complete analysis includes the following visualizations in the `images/` directory:
+### 1. Data Distribution
+![Data Distribution](images/class_distribution.png)
 
-**Temporal Analysis**
-1. `temp1.png` - Fraud ratio evolution over time steps
-2. `temp2.png` - Transaction volume distribution across periods
+Left: Labeled data distribution (excluding unknown class), showing the imbalance between licit and illicit transactions.
 
-**Model Performance**
-3. `fig1.png` - Model Performance Dashboard (F1 scores, generalization gaps, ROC curves)
-4. `fig2.png` - Confusion Matrix Analysis (all four models)
-5. `fig3.png` - Detailed Performance Metrics (precision, recall, AUC breakdown)
+Right: Full dataset class distribution, highlighting a significant proportion of unknown data.
 
-**Additional Visualizations** (generated during analysis)
-- Data distribution plots
-- Graph structure analysis (degree distributions)
-- Feature distributions by class
-- Training/validation curves
-- Feature importance analysis
+**Key Insight**: The dataset is highly imbalanced, which directly affects model evaluation and emphasizes the need for careful metric selection (F1-score over accuracy).
+
+---
+
+### 2. Graph Structure Analysis
+![Graph Structure Analysis](images/degree_distribution.png)
+
+Left: In-degree distribution (log-log scale).
+
+Right: Out-degree distribution (log-log scale).
+
+**Key Insight**: Both distributions exhibit heavy-tailed behavior, indicating a few nodes have very high connectivity while most nodes have low connectivity—common in real-world transactional graphs.
+
+---
+
+### 3. Feature Distributions
+![Feature Distributions](images/feature_distributions.png)
+
+Shows selected feature distributions (feature_1, feature_2, feature_10, feature_50) for licit vs. fraudulent transactions.
+
+**Key Insight**: Certain features demonstrate strong separation between licit and fraudulent classes, which can be exploited by simpler models (e.g., logistic regression).
+
+---
+
+### 4. Temporal Fraud Analysis
+![Temporal Fraud Ratio](images/temp1.png)
+
+Plot of fraud ratio over time steps.
+
+**Key Insight**: The fraud ratio changes drastically over time, confirming temporal concept drift, which explains why models trained on historical data fail to generalize. Training period fraud ratios range from 12% to 71%, while the test period shows approximately 2.59%—a 5-28× reduction.
+
+---
+
+### 5. Transaction Volume Over Time
+![Transaction Volume](images/temp2.png)
+
+Transaction volume distribution across temporal periods.
+
+**Key Insight**: Transaction volume varies significantly across time periods, with notable peaks and valleys. Combined with shifting fraud ratios, this creates a challenging non-stationary environment where static models quickly become obsolete.
+
+---
+
+### 6. Model Performance Dashboard
+![Model Performance Dashboard](images/fig1.png)
+
+Comprehensive dashboard showing:
+- Test F1 scores by model
+- Generalization analysis (train vs test performance with percentage drops)
+- ROC curves comparing all models
+- Precision-recall curves
+
+**Key Insight**: Despite achieving 73-98% F1 on training data, all models experience catastrophic performance drops (87-99%) on test data. Logistic Regression maintains the highest test F1 (0.099) and recall (46.7%). The ROC curves show models retain discriminative ability (AUC 0.678-0.803), but learned decision boundaries fail to capture future fraud patterns.
+
+---
+
+### 7. Confusion Matrix Analysis
+![Confusion Matrix Analysis](images/fig2.png)
+
+Confusion matrices for all four models on test data.
+
+**Logistic Regression**:
+- Test: 5,163 TN, 1,355 FP, 90 TP, 79 FN
+- F1: 0.099, Precision: 0.055, Recall: 0.467
+- Maintains balanced error distribution
+
+**XGBoost**:
+- Test: 6,491 TN, 27 FP, 166 TP, 3 FN
+- F1: 0.030, Precision: 0.100, Recall: 0.018
+- Becomes ultra-conservative, missing 98.2% of fraud
+
+**Simple GCN**:
+- Test: 6,229 TN, 289 FP, 161 TP, 8 FN
+- F1: 0.034, Precision: 0.027, Recall: 0.047
+- Shows similar conservative pattern
+
+**GraphSAGE**:
+- Test: 6,437 TN, 81 FP, 168 TP, 1 FN
+- F1: 0.008, Precision: 0.012, Recall: 0.006
+- Near-complete failure to detect fraud
+
+**Key Insight**: High-capacity models memorize training-specific patterns rather than learning generalizable fraud signatures, resulting in extreme conservatism on test data.
+
+---
+
+### 8. Detailed Performance Metrics
+![Detailed Performance Metrics](images/fig3.png)
+
+Comprehensive breakdown showing:
+- Precision by model (0.012-0.100 on test)
+- Recall by model (0.006-0.467 on test)
+- AUC by model (0.678-0.803 on test)
+- Error rate analysis: False positive vs false negative rates
+- Model comparison table with F1 and AUC scores
+
+**Key Insight**: Logistic Regression achieves the best overall performance (F1: 0.099, Recall: 0.467, AUC: 0.778) and maintains balanced error rates (20.8% FPR, 53.3% FNR). Complex models show catastrophic false negative rates (>94%), essentially failing to detect fraud despite high training performance.
+
+---
+
+### 9. Baseline Model Performance - Logistic Regression
+![Baseline Logistic Regression](images/baseline_logreg.png)
+
+Confusion matrix, ROC curve, and precision-recall curve for logistic regression on test set.
+
+**Key Insight**: Despite its simplicity, logistic regression maintains meaningful performance on test data. The precision-recall curve shows it achieves the best trade-off between catching fraud and managing false alarms.
+
+---
+
+### 10. Baseline Model Performance - XGBoost
+![Baseline XGBoost](images/baseline_xgboost.png)
+
+Confusion matrix, ROC curve, and precision-recall curve for XGBoost on test set.
+
+**Key Insight**: Despite near-perfect training (F1: 0.98), XGBoost collapses on test data. The precision-recall curve shows extremely poor performance, confirming the model learned non-generalizable patterns.
+
+---
+
+### 11. Baseline Model Performance - GCN
+![Baseline GCN](images/baseline_gcn.png)
+
+Confusion matrix, ROC curve, and precision-recall curve for baseline GCN on test set.
+
+**Key Insight**: GCN trains well on historical data (90%+ F1) but test performance drops drastically (2-10% F1), confirming that temporal concept drift dominates performance over model complexity. Graph structure provides little advantage when relationships evolve over time.
+
+---
+
+### 12. Feature Importance - XGBoost
+![Feature Importance XGBoost](images/xgboost_imp_features.png)
+
+Bar chart of feature importance from XGBoost.
+
+**Key Insight**: Certain features dominate the prediction signal. However, their importance in historical data doesn't guarantee future relevance, reinforcing that simpler models leveraging key features can outperform complex GNNs on evolving fraud patterns.
+
+---
+
+### 13. Training and Validation Curves - GCN
+![Training and Validation Curves](images/training_validation_baseline_gcn.png)
+
+Left: Training loss curve.
+Right: Validation F1 curve over epochs for baseline GCN.
+
+**Key Insight**: Training converges smoothly, but validation performance remains low, highlighting that model overfitting to historical data occurs due to concept drift rather than inadequate training or architecture issues.
+
+---
+
+### 14. GraphSAGE Test Performance
+![GraphSAGE Test Performance](images/graphsage.png)
+
+Left: GraphSAGE confusion matrix on the test set.
+Middle: ROC curve showing model's discriminative ability.
+Right: Precision-recall curve highlighting performance on the positive (fraudulent) class.
+
+**Key Insight**: Despite GraphSAGE capturing graph structures effectively during training, test performance is catastrophically low due to severe temporal concept drift. The precision-recall curve shows the model struggles to detect fraudulent transactions, reinforcing that historical graph patterns do not generalize well to future adversarial behavior.
+
+---
+
+### 15. Training vs. Validation Performance - GraphSAGE
+![Training vs Validation GraphSAGE](images/train_val_graphsage.png)
+
+Left: Training loss (or F1) over epochs.
+Right: Validation loss (or F1) over epochs.
+
+**Key Insight**: Training performance improves steadily, but validation performance stagnates or decreases, indicating overfitting. This comparison confirms that even well-optimized GNNs fail to generalize on evolving data, emphasizing the importance of temporal evaluation over random splits.
 
 ---
 
@@ -308,7 +391,6 @@ The findings suggest that effective fraud detection systems should prioritize **
 - Continuous drift monitoring as a first-class system component
 - Simple, interpretable baselines as performance anchors
 - Ensemble approaches where low-variance models dominate the weighting
-- Explicit focus on recall maintenance over precision optimization
 
 This project reinforced that **production ML is about continuous learning, not static model selection**.
 
@@ -322,41 +404,7 @@ This project reinforced that **production ML is about continuous learning, not s
 - XGBoost  
 - NumPy  
 - pandas  
-- matplotlib & seaborn
-- Plotly
-
----
-
-## Running the Experiments
-
-After setting up the project structure and downloading the dataset:
-
-1. Preprocess the data:
-```bash
-python src/data/preprocessing.py
-```
-
-2. Train baseline models:
-```bash
-python src/models/train_models.py --model logistic
-python src/models/train_models.py --model xgboost
-```
-
-3. Train GNN models:
-```bash
-python src/models/train_models.py --model gcn
-python src/models/train_models.py --model graphsage
-```
-
-4. Run a complete diagnostic analysis:
-```bash
-python diagnostic.py
-```
-
-5. Explore analysis notebooks:
-```bash
-jupyter notebook notebooks/
-```
+- matplotlib  
 
 ---
 
@@ -366,7 +414,6 @@ jupyter notebook notebooks/
 - Temporal concept drift is the defining challenge in fraud detection
 - Complex models can overfit faster under non-stationarity
 - Real-world systems must emphasize retraining, monitoring, and robustness
-- Recall preservation is more valuable than training accuracy in adversarial domains
 
 ---
 
@@ -376,8 +423,6 @@ jupyter notebook notebooks/
 - Online and continual learning strategies
 - Explicit drift detection and alerting mechanisms
 - Adaptive retraining schedules based on performance decay
-- Comparative analysis across multiple blockchain datasets
-- Investigation of feature engineering approaches robust to temporal drift
 
 ---
 
@@ -390,9 +435,3 @@ For questions, collaboration, or research discussion:
 - **LinkedIn:** https://www.linkedin.com/in/nandini-saxena1111/
 
 Interested in research and applied Data Science and ML work involving robustness, distribution shift, and graph-based learning.
-
----
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
