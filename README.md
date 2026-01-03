@@ -157,15 +157,67 @@ Random splits were intentionally avoided, as they obscure temporal failure modes
 
 ## Results
 
-| Model | Train F1 | Test F1 | Test Recall |
-|------|----------|---------|-------------|
-| Logistic Regression | 0.73 | **0.098** | **46.7%** |
-| XGBoost | 0.98 | 0.035 | 1.8% |
-| GCN | 0.63 | 0.045 | 5.3% |
-| GraphSAGE | 0.96 | 0.021 | 1.8% |
+![Model Performance Dashboard](images/fig1.png)
+
+### Performance Summary
+
+| Model | Train F1 | Test F1 | Test Recall | Performance Drop |
+|------|----------|---------|-------------|------------------|
+| Logistic Regression | 0.73 | **0.099** | **46.7%** | -87% |
+| XGBoost | 0.98 | 0.030 | 1.8% | -97% |
+| GCN | 0.63 | 0.034 | 4.7% | -95% |
+| GraphSAGE | 0.96 | 0.008 | 0.6% | -99% |
 
 Despite lower training performance, **Logistic Regression outperformed complex GNNs by ~4× on test F1**, demonstrating substantially better temporal generalization.
 
+### Confusion Matrix Analysis
+
+![Confusion Matrices](images/fig2.png)
+
+The confusion matrices reveal distinct failure patterns across model architectures:
+
+**Logistic Regression**
+- Maintains balanced error distribution
+- Test confusion matrix shows 90 true frauds detected out of 169 total
+- 1,355 false positives, but critically preserves recall capability
+
+**XGBoost**
+- Nearly perfect training performance (6,491 TN, 3 TP)
+- Complete generalization failure on test set
+- Becomes extremely conservative, predicting almost all transactions as legitimate
+
+**Graph Neural Networks (GCN, GraphSAGE)**
+- Strong pattern recognition during training
+- Catastrophic collapse on test data
+- GraphSAGE achieves only 1 true positive out of 169 fraudulent transactions
+
+This analysis demonstrates that high-capacity models memorize training-specific patterns rather than learning generalizable fraud signatures.
+
+### Detailed Performance Metrics
+
+![Performance Metrics Breakdown](images/fig3.png)
+
+**Precision Analysis**:
+- All models achieve low precision on test data (0.012-0.100)
+- Logistic Regression maintains the highest precision at 0.055
+- Complex models show precision collapse despite near-perfect training metrics
+
+**Recall Analysis**:
+- Logistic Regression: 46.7% (only model maintaining meaningful recall)
+- XGBoost: 1.8%
+- GCN: 4.7%
+- GraphSAGE: 0.6%
+
+**AUC Comparison**:
+- Training AUC values range from 0.678 to 0.803
+- Test discrimination ability remains relatively preserved
+- However, decision boundaries learned during training fail to capture future fraud patterns
+
+**Error Rate Analysis**:
+The false positive vs false negative trade-offs reveal fundamental differences in model behavior:
+- Logistic Regression: Balanced error profile (20.8% FPR, 53.3% FNR)
+- XGBoost: Ultra-conservative (4.4% FPR, 98.2% FNR)
+- Graph models: Near-complete failure to detect fraud (>94% FNR)
 ---
 
 ## Analysis & Key Insights
